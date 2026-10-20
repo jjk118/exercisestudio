@@ -2,10 +2,10 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 function extract(s,name){const a=s.indexOf('function '+name+'('),body=s.indexOf('{',a);assert(a>=0,name);for(let end=body+1;end<s.length;end++){if(s[end]!=='}')continue;const code=s.slice(a,end+1);try{new vm.Script('('+code+')');return code;}catch{}}throw Error(name);}
 for(const name of ['balance-stability','lower-body-strength','flexibility-joint-mobility','walking-endurance-gait']){
  const s=fs.readFileSync(path.join(__dirname,'..',name+'.html'),'utf8');
- const exercises=JSON.parse(s.match(/var EXERCISES = ([\s\S]*?\n\]);/)[1]),presets=JSON.parse(s.match(/var FOUR_WEEK_PRESETS = (.*);/)[1]);
+ const exercises=JSON.parse(s.match(/var EXERCISES = ([\s\S]*?\n\]);/)[1]),presets=JSON.parse(s.match(/var PROGRESSION_PRESETS = (.*);/)[1]);
  const rest=+s.match(/var BETWEEN_DEFAULT = (\d+)/)[1];let saves=0,holds=0,renders=0;
  const history={day:['existing']},elements={};
- const c={EXERCISES:exercises,FOUR_WEEK_PRESETS:presets,BETWEEN_DEFAULT:rest,todayStr:()=>'',isTimed:e=>!!e.timed,$:id=>elements[id]||(elements[id]={}),applyHolds:()=>holds++,save:()=>saves++,renderSettings:()=>renders++};vm.createContext(c);
+ const c={EXERCISES:exercises,PROGRESSION_PRESETS:presets,BETWEEN_DEFAULT:rest,todayStr:()=>'',isTimed:e=>!!e.timed,$:id=>elements[id]||(elements[id]={}),applyHolds:()=>holds++,save:()=>saves++,renderSettings:()=>renders++};vm.createContext(c);
  vm.runInContext(extract(s,'defaults')+'\n'+extract(s,'limits')+'\n'+extract(s,'applyTrainingWeek'),c);c.S=c.defaults();c.S.history=history;
  const initialEnabled=JSON.stringify(c.S.enabled);
  for(const e of exercises)for(const k of ['sets','reps','hold','rest','repRest'])assert.equal(c.S[k][e.id],presets[0][e.id][k],name+' week 1 defaults '+k);
