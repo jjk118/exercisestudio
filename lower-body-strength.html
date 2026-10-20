@@ -297,6 +297,17 @@ body.hc .bar{border:2px solid #000}
     <p class="hint">This shows today's routine first, so you can check it and watch demos before you begin. Or start one exercise from the list below.</p>
   </section>
 
+  <details class="plan"><summary>Four-week starter plan and weekly settings</summary>
+    <p>General starting guidance for an adult who can perform these movements safely; it is not an individual rehabilitation prescription. Four weeks is a review point, not a guaranteed deadline for results. If you need help standing, have recent illness or surgery, or are unsure which exercises are safe, ask your physiotherapist for an adapted plan first.</p>
+    <p>Practise 2 non-consecutive days a week; add a third only if recovered. Leave at least one day between strength sessions. Do not add a second full leg-strength routine on the same day.</p>
+    <div style="overflow-x:auto"><table style="width:100%;font-size:.9rem;border-collapse:collapse"><caption>Sets × repetitions or duration for each training week</caption><thead><tr><th scope="col">Exercise</th><th scope="col">Week 1</th><th scope="col">Week 2</th><th scope="col">Week 3</th><th scope="col">Week 4</th></tr></thead><tbody><tr><th scope="row">Each strength exercise; side leg lifts on each leg</th><td>1 × 5 reps</td><td>1 × 8 reps</td><td>2 × 5 reps</td><td>2 × 8 reps</td></tr></tbody></table></div>
+    <p>Rest 60 seconds between sets or sides and 60 seconds between exercises; take longer if needed. No scheduled rest between repetitions. Demonstration speed: Normal (1×); choose Slow to learn the movement. Demo speed does not change the exercise-session timings.</p>
+    <p>Heel raises and side leg lifts pause for 1 second; bridges pause for 2 seconds. Use a stable support. Bridges require a safe way to get onto and off the mat; leave them out if that is difficult.</p>
+    <p>In Settings, use Apply week 1–4 to change the timings. Nothing advances automatically. Only progress after the current workload is comfortable and controlled, with no increased pain or unusual fatigue later that day or the next day.</p>
+    <p>Compare day 1 with day 28: note whether the same daily task feels easier, your comfortable walking time, or how long you can balance using the same support. Keep practising beyond four weeks as appropriate.</p>
+    <p>Basis: <a href="https://www.nhs.uk/live-well/exercise/strength-exercises/" target="_blank" rel="noopener">NHS strength</a>, <a href="https://www.nhs.uk/live-well/exercise/balance-exercises/" target="_blank" rel="noopener">NHS balance</a>, <a href="https://www.nhs.uk/live-well/exercise/flexibility-exercises/" target="_blank" rel="noopener">NHS flexibility</a> and <a href="https://www.nhs.uk/live-well/exercise/walking-for-health/" target="_blank" rel="noopener">NHS walking</a>. Exact weekly steps and rest intervals are suggested app presets, not a validated four-week treatment programme.</p>
+  </details>
+
   <div id="list" tabindex="-1"></div>
 
   <p class="safety">Keep a sturdy chair, rail or wall within reach. Stop straight away if you feel pain, dizziness, unusual shortness of breath or unsteadiness. If you are unsure, check with your doctor or physiotherapist.</p>
@@ -349,6 +360,11 @@ body.hc .bar{border:2px solid #000}
       <button class="btn primary" id="closeSettings" type="button">Done</button>
     </div>
     <div class="dlg-body">
+      <section class="sec"><h3>Four-week starter plan</h3>
+        <p class="help">Week 1 is the starting default. Apply a later week only when the current week feels manageable, with controlled movement and no increased pain or unusual fatigue later that day or the next day. Repeat a week or reduce the workload whenever needed. These buttons replace timings and set demo speed to Normal; they keep your chosen exercises and history.</p>
+        <div class="tools"><button type="button" class="btn" data-training-week="1">Apply week 1</button><button type="button" class="btn" data-training-week="2">Apply week 2</button><button type="button" class="btn" data-training-week="3">Apply week 3</button><button type="button" class="btn" data-training-week="4">Apply week 4</button></div>
+        <p class="help" id="trainingPresetStatus" role="status" aria-live="polite"></p>
+      </section>
       <section class="sec">
         <h3>Exercises for today</h3>
         <p class="help">Tick the exercises you want in "Start all". You can still start any exercise on its own from the main list. For each one you can change the sets, reps, hold time (where it applies) and the rest between sets. Rest between reps is optional (leave it blank for none). The time per set is worked out for you.</p>
@@ -1088,7 +1104,7 @@ var EXERCISES = [
     "emoji": "◉",
     "sets": 1,
     "reps": 5,
-    "rest": 30,
+    "rest": 60,
     "demo": "Sit-to-stand exercise NHS",
     "numLabel": "1"
   },
@@ -1110,7 +1126,7 @@ var EXERCISES = [
     "emoji": "◉",
     "sets": 1,
     "reps": 5,
-    "rest": 30,
+    "rest": 60,
     "demo": "Heel raises exercise NHS",
     "hold": 1,
     "numLabel": "2"
@@ -1133,7 +1149,7 @@ var EXERCISES = [
     "emoji": "◉",
     "sets": 1,
     "reps": 5,
-    "rest": 30,
+    "rest": 60,
     "demo": "Hip abduction (side leg lift) exercise NHS",
     "sides": [
       "Left leg",
@@ -1160,14 +1176,14 @@ var EXERCISES = [
     "emoji": "◉",
     "sets": 1,
     "reps": 5,
-    "rest": 30,
+    "rest": 60,
     "demo": "Bridges exercise NHS",
     "hold": 2,
     "numLabel": "4"
   }
 ];
 var READY_SECONDS = 5;
-var BETWEEN_DEFAULT = 30;
+var BETWEEN_DEFAULT = 60;
 var KEY = 'mobility-lower-body-strength.v1', OLD_KEY = 'mobility-lower-body-strength.v0', HIST_KEY = 'mobility-lower-body-strength.history';
 var OLD_REPS = {}, OLD_REST = {};
 
@@ -1771,6 +1787,15 @@ $('exerciseSpeed').addEventListener('change',function(){
   var v=+this.value; if([0.5,0.75,1].indexOf(v)<0) return;
   setSpeed(v);
 });
+var FOUR_WEEK_PRESETS = [{"sitstand": {"sets": 1, "reps": 5, "hold": 0, "rest": 60, "repRest": 0}, "heelraise": {"sets": 1, "reps": 5, "hold": 1, "rest": 60, "repRest": 0}, "hipabduction": {"sets": 1, "reps": 5, "hold": 1, "rest": 60, "repRest": 0}, "bridge": {"sets": 1, "reps": 5, "hold": 2, "rest": 60, "repRest": 0}}, {"sitstand": {"sets": 1, "reps": 8, "hold": 0, "rest": 60, "repRest": 0}, "heelraise": {"sets": 1, "reps": 8, "hold": 1, "rest": 60, "repRest": 0}, "hipabduction": {"sets": 1, "reps": 8, "hold": 1, "rest": 60, "repRest": 0}, "bridge": {"sets": 1, "reps": 8, "hold": 2, "rest": 60, "repRest": 0}}, {"sitstand": {"sets": 2, "reps": 5, "hold": 0, "rest": 60, "repRest": 0}, "heelraise": {"sets": 2, "reps": 5, "hold": 1, "rest": 60, "repRest": 0}, "hipabduction": {"sets": 2, "reps": 5, "hold": 1, "rest": 60, "repRest": 0}, "bridge": {"sets": 2, "reps": 5, "hold": 2, "rest": 60, "repRest": 0}}, {"sitstand": {"sets": 2, "reps": 8, "hold": 0, "rest": 60, "repRest": 0}, "heelraise": {"sets": 2, "reps": 8, "hold": 1, "rest": 60, "repRest": 0}, "hipabduction": {"sets": 2, "reps": 8, "hold": 1, "rest": 60, "repRest": 0}, "bridge": {"sets": 2, "reps": 8, "hold": 2, "rest": 60, "repRest": 0}}];
+function applyTrainingWeek(week){
+  var preset=FOUR_WEEK_PRESETS[week-1]; if(!preset) return;
+  EXERCISES.forEach(function(e){var v=preset[e.id]; ['sets','reps','hold','rest','repRest'].forEach(function(k){S[k][e.id]=v[k];});});
+  S.between=BETWEEN_DEFAULT; S.exerciseSpeed=1;
+  applyHolds(); save(); renderSettings();
+  $('trainingPresetStatus').textContent='Week '+week+' timings applied. Your exercise selections and history are unchanged.';
+}
+document.querySelectorAll('[data-training-week]').forEach(function(b){b.addEventListener('click',function(){applyTrainingWeek(+b.dataset.trainingWeek);});});
 $('openSettings').addEventListener('click',function(){ renderSettings(); $('settings').showModal(); });
 $('closeSettings').addEventListener('click',function(){ $('settings').close(); });
 $('settings').addEventListener('close',function(){ renderHome(); if(!$('routine').hidden) renderRoutine(); });
