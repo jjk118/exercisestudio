@@ -307,7 +307,6 @@ body.hc .bar{border:2px solid #000}
 </header>
 
 <main>
-  <section class="sec" aria-label="Who this routine is for"><h2>Who this routine is for</h2><p>This routine is for people whose lower back or hips feel stiff, making it difficult to bend, turn or move comfortably. Mobility means how easily you can move. You can adjust the repetitions, stretch hold time and rest in Settings.</p></section>
   <section class="disclaimer" aria-labelledby="discTitle">
     <h2 id="discTitle">Safety first</h2>
     <p>These exercises help to improve Lower Back & Hip Mobility. This app is an animated guide. It does not replace medical or physiotherapy advice. Please follow the instructions your physiotherapist or doctor gave you personally.</p>
@@ -1041,7 +1040,7 @@ DemoPlayer.prototype.stop=function(){ cancelAnimationFrame(this.raf); this.raf=0
 // The NUH sheet says, for every exercise: hold 20 seconds, do 3 times. Those are the defaults below.
 // Rest times and the time spent moving in and out of each stretch are NOT on the sheet; they are app settings.
 var NUH_HOLD = 20, NUH_REPS = 3;
-var GROUP = { title:'Lower Back & Hip Mobility exercises', text:'Each Lower Back & Hip Mobility exercises to hold 20 seconds X 3 sets. These settings can be adjusted via Settings button' };
+var GROUP = { title:"Lower Back & Hip Mobility", text:"This routine is for people whose lower back or hips feel stiff, making it difficult to bend, turn or move comfortably. Mobility means how easily you can move. You can adjust the repetitions, stretch hold time and rest in Settings." };
 var SIDES = ['Left side','Right side'];
 var EXERCISES = [
   { id:'lumbarrot', numLabel:'1', name:'Lumbar rotation ROM', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
@@ -1279,7 +1278,7 @@ function renderHome(){
     $('startAll').disabled = true;
   }
   renderResumeCard();
-  var html = '<section aria-label="'+esc(GROUP.title)+'"><div class="grp"><p>'+esc(GROUP.text)+'</p></div><ol class="list">';
+  var html = '<section aria-label="'+esc(GROUP.title)+'"><div class="grp"><h2>'+esc(GROUP.title)+'</h2><p>'+esc(GROUP.text)+'</p></div><ol class="list">';
   EXERCISES.forEach(function(e,i){
     var on = S.enabled[e.id];
     html += '<li class="card'+(on?'':' off')+'">'+
