@@ -243,6 +243,9 @@ body.hc .bar{border:2px solid #000}
 .done-list{list-style:none; padding:0; margin:.4rem 0; display:grid; gap:.3rem}
 .done-list li{font-weight:700; color:var(--done)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.grp{margin:1.6rem 0 .8rem}
+.grp h2{font-size:1.3rem}
+.grp p{color:var(--muted); font-size:.95rem; margin-top:.2rem}
 </style>
 </head>
 <body>
@@ -260,7 +263,6 @@ body.hc .bar{border:2px solid #000}
 </header>
 
 <main>
-  <section class="sec" aria-label="Who this routine is for"><h2>Who this routine is for</h2><p>This routine is for people who want to practise standing up, stepping and keeping their balance. It includes leg-strength and balance exercises, with demonstrations and settings you can adjust.</p></section>
   <section class="warn" id="storeWarn" hidden>
     <strong>This viewer is not saving your data.</strong> Your settings and history will be lost when you close it. Open the file in Safari or Chrome (or add it to your Home Screen) to keep them. You can also copy a backup from History.
   </section>
@@ -284,7 +286,8 @@ body.hc .bar{border:2px solid #000}
     <p class="hint">This shows today's routine first, so you can check it and watch demos before you begin. Or start one exercise from the list below.</p>
   </section>
 
-  <ol class="list" id="list"></ol>
+  <section aria-labelledby="routineGroupTitle"><div class="grp"><h2 id="routineGroupTitle">Leg Strength &amp; Balance</h2><p>This routine is for people who want to practise standing up, stepping and keeping their balance. It includes leg-strength and balance exercises, with demonstrations and settings you can adjust.</p></div>
+  <ol class="list" id="list"></ol></section>
 
   <p class="safety">These exercises are general guidance, not medical advice. Keep a sturdy chair, rail or wall within reach, and stop straight away if you feel pain, dizziness or unsteadiness. Check with your doctor or physiotherapist if you are unsure.</p>
   <nav aria-label="Exercise Studio"><a class="btn" href="https://myai118.github.io/exercisestudio/" target="_top" style="display:flex;justify-content:center;text-align:center;text-decoration:none;margin:1.5rem 0">← Back to Exercise Studio</a></nav>
