@@ -83,6 +83,23 @@ footer p{margin:0 0 4px;font-size:13px;color:var(--light-gray)}
   .soon{padding:24px 22px}
 }
 @media print{.icon-btn,.open,.home,.picker{display:none}}
+
+/* Readable dropdowns across all Exercise Studio pages. */
+select, select.btn, .h-add select {
+  font-family:inherit;
+  font-size:max(20px, 1.1rem);
+  font-weight:600;
+  line-height:1.4;
+  min-height:56px;
+  padding:.6rem .75rem;
+  max-width:100%;
+}
+select option, select optgroup { font-family:inherit; font-size:1em; font-weight:600; }
+
+.pick-btn, .pick-opt { font-size:max(20px, 1.1rem); line-height:1.4; min-height:64px; }
+.pick-opt { padding:12px 10px; }
+.pick-text { line-height:1.4; overflow-wrap:anywhere; }
+.pick-text small { font-size:max(18px, 1rem); line-height:1.4; }
 </style>
 </head>
 <body>

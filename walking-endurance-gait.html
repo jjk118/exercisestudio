@@ -255,6 +255,18 @@ body.hc .bar{border:2px solid #000}
 .s-set{font-weight:700; font-size:1.25rem; color:var(--phase); line-height:1.25}
 @media (min-height:820px){.stage-s{width:min(100%,40dvh)}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* Readable dropdowns across all Exercise Studio pages. */
+select, select.btn, .h-add select {
+  font-family:inherit;
+  font-size:max(20px, 1.1rem);
+  font-weight:600;
+  line-height:1.4;
+  min-height:56px;
+  padding:.6rem .75rem;
+  max-width:100%;
+}
+select option, select optgroup { font-family:inherit; font-size:1em; font-weight:600; }
 </style>
 </head>
 <body>
