@@ -1,0 +1,10 @@
+{
+  "name": "exercise-studio",
+  "private": true,
+  "scripts": {
+    "test:mobility": "node tests/mobility-ui.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
