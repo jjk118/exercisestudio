@@ -260,6 +260,7 @@ body.hc .bar{border:2px solid #000}
 </header>
 
 <main>
+  <section class="sec" aria-label="Who this routine is for"><p>This routine is for people who want to practise standing up, stepping and keeping their balance. It includes leg-strength and balance exercises, with demonstrations and settings you can adjust.</p></section>
   <section class="warn" id="storeWarn" hidden>
     <strong>This viewer is not saving your data.</strong> Your settings and history will be lost when you close it. Open the file in Safari or Chrome (or add it to your Home Screen) to keep them. You can also copy a backup from History.
   </section>
@@ -345,6 +346,17 @@ body.hc .bar{border:2px solid #000}
         <div class="nums" style="display:block; max-width:10rem">
           <label>Seconds <input type="number" id="between" min="5" max="180" inputmode="numeric"></label>
         </div>
+      </section>
+
+      <section class="sec">
+        <h3>Exercise speed</h3>
+        <label for="exerciseSpeed">Demonstration speed</label>
+        <select id="exerciseSpeed" class="btn" style="width:100%;margin-top:.5rem">
+          <option value="0.5">Very slow — half speed (0.5×)</option>
+          <option value="0.75">Slow — three-quarter speed (0.75×)</option>
+          <option value="1">Normal speed (1×)</option>
+        </select>
+        <p class="help">Choose how quickly the demonstration moves. This applies to every demonstration in this routine and is saved on this device. Hold counts, exercise timers and rest times stay at the seconds you selected.</p>
       </section>
 
       <section class="sec">
@@ -816,7 +828,7 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function defaults(){
-  var s = { enabled:{}, sets:{}, reps:{}, rest:{}, repRest:{}, history:{}, histTime:{}, histStamp:'', histSavedAt:0, lastBackup:0, between:20, sound:true, voice:false, size:'normal', contrast:false,
+  var s = { exerciseSpeed:1, enabled:{}, sets:{}, reps:{}, rest:{}, repRest:{}, history:{}, histTime:{}, histStamp:'', histSavedAt:0, lastBackup:0, between:20, sound:true, voice:false, size:'normal', contrast:false,
             done:{ date:todayStr(), ids:[] } };
   EXERCISES.forEach(function(e){ s.enabled[e.id]=true; s.sets[e.id]=e.sets; s.reps[e.id]=e.reps; s.rest[e.id]=e.rest; s.repRest[e.id]=0; });
   return s;
@@ -857,6 +869,7 @@ function load(){
     if(raw) p = JSON.parse(raw);
   }catch(err){}
   if(p){
+    if([0.5,0.75,1].indexOf(+p.exerciseSpeed)>-1) s.exerciseSpeed=+p.exerciseSpeed;
     EXERCISES.forEach(function(e){
       if(p.enabled && typeof p.enabled[e.id]==='boolean') s.enabled[e.id]=p.enabled[e.id];
       if(p.sets && p.sets[e.id]>=1) s.sets[e.id]=p.sets[e.id];
@@ -1050,6 +1063,8 @@ function renderHome(){
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
 function setSpeed(v){
+  S.exerciseSpeed = v; save();
+  $('exerciseSpeed').value = String(v);
   if(demoPlayer) demoPlayer.speed = v;
   $('dSlow').setAttribute('aria-pressed', v<1 ? 'true':'false');
   $('dNormal').setAttribute('aria-pressed', v<1 ? 'false':'true');
@@ -1073,7 +1088,7 @@ function openDemo(id){
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, !!(e.sides||e.setLabels));   // left leg first
   demoPlayer.start();
-  setSpeed(1);
+  setSpeed(S.exerciseSpeed || 1);
   $('legCtrl').hidden = !(e.sides||e.setLabels);
   setLeg(true);
 }
@@ -1090,7 +1105,7 @@ $('dReplay').addEventListener('click',function(){
 });
 $('dLeft').addEventListener('click',function(){ setLeg(true); });
 $('dRight').addEventListener('click',function(){ setLeg(false); });
-$('dSlow').addEventListener('click',function(){ setSpeed(.6); });
+$('dSlow').addEventListener('click',function(){ setSpeed(.5); });
 $('dNormal').addEventListener('click',function(){ setSpeed(1); });
 
 /* ---------- Routine review screen ---------- */
@@ -1350,6 +1365,7 @@ function fieldHtml(e,f,label){
   return '<label>'+label+' <input type="number" inputmode="numeric" min="'+lim[0]+'" max="'+lim[1]+'" data-f="'+f+'" data-id="'+e.id+'" value="'+v+'"'+(f==='repRest' ? ' placeholder="none"' : '')+'></label>';
 }
 function renderSettings(){
+  $('exerciseSpeed').value = String(S.exerciseSpeed || 1);
   var html = '';
   EXERCISES.forEach(function(e){
     var timed = isTimed(e);
@@ -1380,6 +1396,10 @@ function clampNum(v,min,max,fallback){
   if(isNaN(n)) return fallback;
   return Math.min(max,Math.max(min,n));
 }
+$('exerciseSpeed').addEventListener('change',function(){
+  var v=+this.value; if([0.5,0.75,1].indexOf(v)<0) return;
+  setSpeed(v);
+});
 $('openSettings').addEventListener('click',function(){ renderSettings(); $('settings').showModal(); });
 $('closeSettings').addEventListener('click',function(){ $('settings').close(); });
 $('settings').addEventListener('close',function(){ renderHome(); if(!$('routine').hidden) renderRoutine(); });
