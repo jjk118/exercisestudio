@@ -323,7 +323,6 @@ select option, select optgroup { font-family:inherit; font-size:1em; font-weight
     <h2 id="discTitle">Safety first</h2>
     <p>These exercises help to improve Lower Back & Hip Mobility. This app is an animated guide. It does not replace medical or physiotherapy advice. Please follow the instructions your physiotherapist or doctor gave you personally.</p>
     <p><strong>Stop</strong> if an exercise causes pain, dizziness, unusual symptoms or significant discomfort. These exercises are not a treatment or cure for any condition.</p>
-    <p class="fine">This is an unofficial app. It is not made or checked by NUH.</p>
   </section>
 
   <section class="warn" id="storeWarn" hidden>
@@ -377,7 +376,7 @@ select option, select optgroup { font-family:inherit; font-size:1em; font-weight
       </div>
       <p class="sidecue" id="demoSideCue" hidden></p>
       <section class="sec">
-        <h3>From your NUH sheet</h3>
+        <h3>Exercise guidance</h3>
         <p id="demoSheet"></p>
         <p class="plan-line" id="demoPlan" style="margin-top:.7rem"></p>
         <h3 class="sub">Starting position</h3>
@@ -412,11 +411,11 @@ select option, select optgroup { font-family:inherit; font-size:1em; font-weight
 
       <section class="sec">
         <h3>Exercises for today</h3>
-        <p class="help">Tick the exercises you want in "Start all". You can still start any exercise on its own from the main list. The NUH sheet says hold 20 seconds, do 3 times for every exercise, and that is where every exercise starts. If you change the hold time or repetitions, that is your own setting. Rest times are also app settings, because the sheet does not give them.</p>
+        <p class="help">Tick the exercises you want in "Start all". You can still start any exercise on its own from the main list. The starting defaults are a 20-second hold, repeated 3 times for each exercise. If you change the hold time or repetitions, that is your own setting. Rest times can also be adjusted.</p>
         <div class="tools">
           <button class="btn" type="button" id="selAll">Select all</button>
           <button class="btn" type="button" id="selNone">Clear all</button>
-          <button class="btn" type="button" id="resetTiming">Reset to NUH sheet values</button>
+          <button class="btn" type="button" id="resetTiming">Reset to defaults</button>
         </div>
         <div id="exRows"></div>
       </section>
@@ -1048,14 +1047,14 @@ DemoPlayer.prototype.stop=function(){ cancelAnimationFrame(this.raf); this.raf=0
 /*ENGINE-END*/
 
 
-/* ---------- Exercise data: the four exercises on the NUH Physiotherapy sheet ---------- */
-// The NUH sheet says, for every exercise: hold 20 seconds, do 3 times. Those are the defaults below.
+/* ---------- Exercise data: lower back and hip mobility exercises ---------- */
+// Starting defaults: hold for 20 seconds and repeat 3 times.
 // Rest times and the time spent moving in and out of each stretch are NOT on the sheet; they are app settings.
-var NUH_HOLD = 20, NUH_REPS = 3;
+var DEFAULT_HOLD = 20, DEFAULT_REPS = 3;
 var GROUP = { title:"Lower Back & Hip Mobility", text:"This routine is for people whose lower back or hips feel stiff, making it difficult to bend, turn or move comfortably. Mobility means how easily you can move. You can adjust the repetitions, stretch hold time and rest in Settings." };
 var SIDES = ['Left side','Right side'];
 var EXERCISES = [
-  { id:'lumbarrot', numLabel:'1', name:'Lumbar rotation ROM', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'lumbarrot', numLabel:'1', name:'Lumbar rotation ROM', sides:SIDES, hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Lie on your back with one knee bent and the other leg straight. Use the hand opposite to your bent knee to bring it up and across your body.',
     sheet:'Lie on your back with one knee bent and the other straight. Use the hand opposite to your bent knee to bring it up and across your body.',
     sideCue:['Bend your left knee. Bring it across with your right hand.','Bend your right knee. Bring it across with your left hand.'],
@@ -1063,7 +1062,7 @@ var EXERCISES = [
     start:'Lie on your back. Bend one knee and keep the other leg straight.',
     steps:function(h){ return ['Lie on your back with one knee bent and the other leg straight.','Use the hand opposite to your bent knee to bring that knee up and across your body.','Hold for '+h+' seconds.','Slowly return to the starting position.']; },
     safety:'Move gently. Stop if you feel pain, dizziness or anything unusual.' },
-  { id:'piriformis', numLabel:'2', name:'Piriformis stretch', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'piriformis', numLabel:'2', name:'Piriformis stretch', sides:SIDES, hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Lie on your back. Cross your ankle over the other leg. Use your hands to pull your thigh towards your chest.',
     sheet:'Lying on your back, cross your ankle over the other leg. Use your hands to pull your thigh towards your chest. You should feel a stretch over your buttock.',
     sideCue:['Cross your left ankle over your right leg. Pull your right thigh towards your chest.','Cross your right ankle over your left leg. Pull your left thigh towards your chest.'],
@@ -1071,13 +1070,13 @@ var EXERCISES = [
     start:'Lie on your back with your knees bent and your feet flat.',
     steps:function(h){ return ['Lie on your back.','Cross one ankle over the other leg.','Use your hands to pull your thigh towards your chest. You should feel a stretch over your buttock.','Hold for '+h+' seconds.','Slowly return to the starting position.']; },
     safety:'Pull gently. Stop if you feel pain, dizziness or anything unusual.' },
-  { id:'lumbarflex', numLabel:'3', name:'Lumbar flexion ROM', hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'lumbarflex', numLabel:'3', name:'Lumbar flexion ROM', hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Sit securely on a chair. Bend your upper body forward, as shown on your sheet.',
     sheet:'Sit on a chair. Bend forward as shown.',
     start:'Sit securely on a chair that cannot slide, with both feet flat on the floor.',
     steps:function(h){ return ['Sit securely on a chair, feet flat on the floor.','Bend your upper body forward, as shown on your sheet.','Hold for '+h+' seconds.','Slowly sit back up.']; },
     safety:'Use a sturdy chair that cannot slide. Move slowly. Stop if you feel pain, dizziness or feel unsteady.' },
-  { id:'lumbarside', numLabel:'4', name:'Lumbar side flexion ROM', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'lumbarside', numLabel:'4', name:'Lumbar side flexion ROM', sides:SIDES, hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Sit securely on a chair. Bend your upper body sideways, as shown on your sheet.',
     sheet:'Sit on a chair. Bend sideways as shown.',
     sideCue:['Bend your upper body to your left.','Bend your upper body to your right.'],
@@ -1202,7 +1201,7 @@ function perRepOf(e){ return SCENES[e.id].total; }          // seconds in one re
 function applyHolds(){ EXERCISES.forEach(function(e){ setHold(e.id, S.hold[e.id]); }); }
 function workOf(e){ return repsOf(e)*perRepOf(e) + (repsOf(e)-1)*repRestOf(e); }     // one side
 function est(e){ var n=sidesOf(e).length; return n*workOf(e) + (n-1)*S.sideRest; }
-function isCustom(e){ return S.hold[e.id]!==NUH_HOLD || S.reps[e.id]!==NUH_REPS; }
+function isCustom(e){ return S.hold[e.id]!==DEFAULT_HOLD || S.reps[e.id]!==DEFAULT_REPS; }
 function sidesText(e){
   if(!e.sides) return '';
   var s=sidesOf(e);
@@ -1300,7 +1299,7 @@ function renderHome(){
         '<p class="meta">Estimated time: '+fmtDur(est(e))+'</p>'+
         '<div class="tags">'+
           '<span class="tag'+(isDone(e)?' done':'')+'">'+esc(lastDoneText(e))+'</span>'+
-          (isCustom(e)?'<span class="tag custom">Your own setting (NUH sheet: hold '+NUH_HOLD+' sec, '+NUH_REPS+' times)</span>':'')+
+          (isCustom(e)?'<span class="tag custom">Your own setting (Starting defaults: hold '+DEFAULT_HOLD+' sec, '+DEFAULT_REPS+' times)</span>':'')+
           (on?'':'<span class="tag">Not in today\'s plan</span>')+
         '</div>'+
       '</div></div>'+
@@ -1628,7 +1627,7 @@ function renderSettings(){
     var sel=S.sideSel[e.id];
     html += '<div class="ex-row">'+
       '<label class="chk"><input type="checkbox" data-en="'+e.id+'"'+(S.enabled[e.id]?' checked':'')+'> '+esc(e.name)+'</label>'+
-      '<p class="help" style="margin:0 0 .3rem 2.3rem">NUH sheet: hold '+NUH_HOLD+' seconds, do '+NUH_REPS+' times.</p>'+
+      '<p class="help" style="margin:0 0 .3rem 2.3rem">Starting defaults: hold '+DEFAULT_HOLD+' seconds, do '+DEFAULT_REPS+' times.</p>'+
       '<div class="nums">'+
         fieldHtml(e,'hold','Hold time (seconds)')+
         fieldHtml(e,'reps','Repetitions')+
@@ -1638,7 +1637,7 @@ function renderSettings(){
           '<option value="left"'+(sel==='left'?' selected':'')+'>Left side only</option>'+
           '<option value="right"'+(sel==='right'?' selected':'')+'>Right side only</option></select></label>' : '')+
       '</div>'+
-      '<p class="help changed" id="chg-'+e.id+'"'+(isCustom(e)?'':' hidden')+'>You changed this. It is your own setting, not the NUH prescription.</p>'+
+      '<p class="help changed" id="chg-'+e.id+'"'+(isCustom(e)?'':' hidden')+'>You changed this. It is your own setting, different from the starting defaults.</p>'+
       '<div class="est"><span>Time for one side (estimated)</span><b id="sec-'+e.id+'">'+fmtDur(workOf(e))+'</b></div>'+
       '<div class="est"><span>Total time (estimated)</span><b id="tot-'+e.id+'">'+fmtDur(est(e))+'</b></div>'+
     '</div>';
