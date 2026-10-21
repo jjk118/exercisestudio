@@ -290,6 +290,38 @@ body.hc .bar{border:2px solid #000}
   .s-side{font-size:1.15rem; padding:.1rem .9rem}
 }
 
+
+/* Readable dropdowns across all Exercise Studio pages. */
+select, select.btn, .h-add select {
+  font-family:inherit;
+  font-size:max(20px, 1.1rem);
+  font-weight:600;
+  line-height:1.4;
+  min-height:56px;
+  padding:.6rem .75rem;
+  max-width:100%;
+}
+select option, select optgroup { font-family:inherit; font-size:1em; font-weight:600; }
+
+/* Give the live exercise animation the full available card width. */
+#session .s-card{padding:.7rem .75rem 0;gap:.2rem}
+#session .stage-s,
+#session.p-ready .stage-s,
+#session.p-rest .stage-s{
+ width:100%;max-width:32rem;aspect-ratio:5/4;flex-shrink:0;
+}
+#session .s-count{font-size:3.6rem;line-height:1.05;margin-top:0}
+#session .s-cap{min-height:1.45rem;margin-top:.15rem}
+#session .s-btns{padding-top:.5rem}
+
+/* Keep session controls below the content, including on short screens. */
+#session .s-card{height:auto;min-height:min-content;flex-shrink:0}
+#session .s-card > *{flex-shrink:0}
+#session .s-btns{
+ position:static;bottom:auto;margin-top:.8rem;flex-shrink:0;
+ padding:.5rem 0 calc(.8rem + env(safe-area-inset-bottom,0px));
+ background:var(--surface);
+}
 </style>
 </head>
 <body>
@@ -311,7 +343,6 @@ body.hc .bar{border:2px solid #000}
     <h2 id="discTitle">Safety first</h2>
     <p>These exercises help to improve Lower Back & Hip Mobility. This app is an animated guide. It does not replace medical or physiotherapy advice. Please follow the instructions your physiotherapist or doctor gave you personally.</p>
     <p><strong>Stop</strong> if an exercise causes pain, dizziness, unusual symptoms or significant discomfort. These exercises are not a treatment or cure for any condition.</p>
-    <p class="fine">This is an unofficial app. It is not made or checked by NUH.</p>
   </section>
 
   <section class="warn" id="storeWarn" hidden>
@@ -351,7 +382,7 @@ body.hc .bar{border:2px solid #000}
       <button class="btn primary" id="demoClose" type="button">Close</button>
     </div>
     <div class="dlg-body">
-      <canvas class="stage" id="demoCanvas" role="img"></canvas>
+      <div class="ctrl" aria-label="Demo view"><button class="btn" type="button" data-view="25" aria-pressed="true">Angled view</button><button class="btn" type="button" data-view="0" aria-pressed="false">Side view</button><button class="btn" type="button" data-view="80" aria-pressed="false">Front view</button></div><canvas class="stage" id="demoCanvas" role="img"></canvas>
       <p class="cap" id="demoCap" aria-live="off"></p>
       <div class="ctrl">
         <button class="btn" id="dPlay" type="button">Pause</button>
@@ -365,7 +396,7 @@ body.hc .bar{border:2px solid #000}
       </div>
       <p class="sidecue" id="demoSideCue" hidden></p>
       <section class="sec">
-        <h3>From your NUH sheet</h3>
+        <h3>Exercise guidance</h3>
         <p id="demoSheet"></p>
         <p class="plan-line" id="demoPlan" style="margin-top:.7rem"></p>
         <h3 class="sub">Starting position</h3>
@@ -388,12 +419,23 @@ body.hc .bar{border:2px solid #000}
     </div>
     <div class="dlg-body">
       <section class="sec">
+        <h3>Exercise speed</h3>
+        <label for="exerciseSpeed">Demonstration speed</label>
+        <select id="exerciseSpeed" class="btn" style="width:100%;margin-top:.5rem">
+          <option value="0.5">Very slow — half speed (0.5×)</option>
+          <option value="0.75">Slow — three-quarter speed (0.75×)</option>
+          <option value="1">Normal speed (1×)</option>
+        </select>
+        <p class="help">Choose how quickly the demonstration moves. This applies to every demonstration in this routine and is saved on this device. Hold counts, exercise timers and rest times stay at the seconds you selected.</p>
+      </section>
+
+      <section class="sec">
         <h3>Exercises for today</h3>
-        <p class="help">Tick the exercises you want in "Start all". You can still start any exercise on its own from the main list. The NUH sheet says hold 20 seconds, do 3 times for every exercise, and that is where every exercise starts. If you change the hold time or repetitions, that is your own setting. Rest times are also app settings, because the sheet does not give them.</p>
+        <p class="help">Tick the exercises you want in "Start all". You can still start any exercise on its own from the main list. The starting defaults are a 20-second hold, repeated 3 times for each exercise. If you change the hold time or repetitions, that is your own setting. Rest times can also be adjusted.</p>
         <div class="tools">
           <button class="btn" type="button" id="selAll">Select all</button>
           <button class="btn" type="button" id="selNone">Clear all</button>
-          <button class="btn" type="button" id="resetTiming">Reset to NUH sheet values</button>
+          <button class="btn" type="button" id="resetTiming">Reset to defaults</button>
         </div>
         <div id="exRows"></div>
       </section>
@@ -1025,14 +1067,14 @@ DemoPlayer.prototype.stop=function(){ cancelAnimationFrame(this.raf); this.raf=0
 /*ENGINE-END*/
 
 
-/* ---------- Exercise data: the four exercises on the NUH Physiotherapy sheet ---------- */
-// The NUH sheet says, for every exercise: hold 20 seconds, do 3 times. Those are the defaults below.
+/* ---------- Exercise data: lower back and hip mobility exercises ---------- */
+// Starting defaults: hold for 20 seconds and repeat 3 times.
 // Rest times and the time spent moving in and out of each stretch are NOT on the sheet; they are app settings.
-var NUH_HOLD = 20, NUH_REPS = 3;
-var GROUP = { title:'Lower Back & Hip Mobility exercises', text:'Each Lower Back & Hip Mobility exercises to hold 20 seconds X 3 sets. These settings can be adjusted via Settings button' };
+var DEFAULT_HOLD = 20, DEFAULT_REPS = 3;
+var GROUP = { title:"Lower Back & Hip Mobility", text:"This routine is for people whose lower back or hips feel stiff, making it difficult to bend, turn or move comfortably. Mobility means how easily you can move. You can adjust the repetitions, stretch hold time and rest in Settings." };
 var SIDES = ['Left side','Right side'];
 var EXERCISES = [
-  { id:'lumbarrot', numLabel:'1', name:'Lumbar rotation ROM', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'lumbarrot', numLabel:'1', name:'Lumbar rotation ROM', sides:SIDES, hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Lie on your back with one knee bent and the other leg straight. Use the hand opposite to your bent knee to bring it up and across your body.',
     sheet:'Lie on your back with one knee bent and the other straight. Use the hand opposite to your bent knee to bring it up and across your body.',
     sideCue:['Bend your left knee. Bring it across with your right hand.','Bend your right knee. Bring it across with your left hand.'],
@@ -1040,7 +1082,7 @@ var EXERCISES = [
     start:'Lie on your back. Bend one knee and keep the other leg straight.',
     steps:function(h){ return ['Lie on your back with one knee bent and the other leg straight.','Use the hand opposite to your bent knee to bring that knee up and across your body.','Hold for '+h+' seconds.','Slowly return to the starting position.']; },
     safety:'Move gently. Stop if you feel pain, dizziness or anything unusual.' },
-  { id:'piriformis', numLabel:'2', name:'Piriformis stretch', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'piriformis', numLabel:'2', name:'Piriformis stretch', sides:SIDES, hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Lie on your back. Cross your ankle over the other leg. Use your hands to pull your thigh towards your chest.',
     sheet:'Lying on your back, cross your ankle over the other leg. Use your hands to pull your thigh towards your chest. You should feel a stretch over your buttock.',
     sideCue:['Cross your left ankle over your right leg. Pull your right thigh towards your chest.','Cross your right ankle over your left leg. Pull your left thigh towards your chest.'],
@@ -1048,13 +1090,13 @@ var EXERCISES = [
     start:'Lie on your back with your knees bent and your feet flat.',
     steps:function(h){ return ['Lie on your back.','Cross one ankle over the other leg.','Use your hands to pull your thigh towards your chest. You should feel a stretch over your buttock.','Hold for '+h+' seconds.','Slowly return to the starting position.']; },
     safety:'Pull gently. Stop if you feel pain, dizziness or anything unusual.' },
-  { id:'lumbarflex', numLabel:'3', name:'Lumbar flexion ROM', hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'lumbarflex', numLabel:'3', name:'Lumbar flexion ROM', hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Sit securely on a chair. Bend your upper body forward, as shown on your sheet.',
     sheet:'Sit on a chair. Bend forward as shown.',
     start:'Sit securely on a chair that cannot slide, with both feet flat on the floor.',
     steps:function(h){ return ['Sit securely on a chair, feet flat on the floor.','Bend your upper body forward, as shown on your sheet.','Hold for '+h+' seconds.','Slowly sit back up.']; },
     safety:'Use a sturdy chair that cannot slide. Move slowly. Stop if you feel pain, dizziness or feel unsteady.' },
-  { id:'lumbarside', numLabel:'4', name:'Lumbar side flexion ROM', sides:SIDES, hold:NUH_HOLD, reps:NUH_REPS, rest:10,
+  { id:'lumbarside', numLabel:'4', name:'Lumbar side flexion ROM', sides:SIDES, hold:DEFAULT_HOLD, reps:DEFAULT_REPS, rest:10,
     cue:'Sit securely on a chair. Bend your upper body sideways, as shown on your sheet.',
     sheet:'Sit on a chair. Bend sideways as shown.',
     sideCue:['Bend your upper body to your left.','Bend your upper body to your right.'],
@@ -1074,7 +1116,7 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function defaults(){
-  var s = { enabled:{}, reps:{}, hold:{}, repRest:{}, sideSel:{}, history:{}, histTime:{}, histStamp:'', histSavedAt:0, lastBackup:0, between:BETWEEN_DEFAULT, sideRest:SIDEREST_DEFAULT,
+  var s = { exerciseSpeed:1, enabled:{}, reps:{}, hold:{}, repRest:{}, sideSel:{}, history:{}, histTime:{}, histStamp:'', histSavedAt:0, lastBackup:0, between:BETWEEN_DEFAULT, sideRest:SIDEREST_DEFAULT,
             sound:true, voice:false, size:'normal', contrast:false, done:{ date:todayStr(), ids:[] } };
   EXERCISES.forEach(function(e){ s.enabled[e.id]=true; s.reps[e.id]=e.reps; s.hold[e.id]=e.hold; s.repRest[e.id]=e.rest; s.sideSel[e.id]='both'; });
   return s;
@@ -1115,6 +1157,7 @@ function load(){
     if(raw) p = JSON.parse(raw);
   }catch(err){}
   if(p){
+    if([0.5,0.75,1].indexOf(+p.exerciseSpeed)>-1) s.exerciseSpeed=+p.exerciseSpeed;
     EXERCISES.forEach(function(e){
       if(p.enabled && typeof p.enabled[e.id]==='boolean') s.enabled[e.id]=p.enabled[e.id];
       if(p.reps && p.reps[e.id]>=1 && p.reps[e.id]<=20) s.reps[e.id]=p.reps[e.id];
@@ -1178,7 +1221,7 @@ function perRepOf(e){ return SCENES[e.id].total; }          // seconds in one re
 function applyHolds(){ EXERCISES.forEach(function(e){ setHold(e.id, S.hold[e.id]); }); }
 function workOf(e){ return repsOf(e)*perRepOf(e) + (repsOf(e)-1)*repRestOf(e); }     // one side
 function est(e){ var n=sidesOf(e).length; return n*workOf(e) + (n-1)*S.sideRest; }
-function isCustom(e){ return S.hold[e.id]!==NUH_HOLD || S.reps[e.id]!==NUH_REPS; }
+function isCustom(e){ return S.hold[e.id]!==DEFAULT_HOLD || S.reps[e.id]!==DEFAULT_REPS; }
 function sidesText(e){
   if(!e.sides) return '';
   var s=sidesOf(e);
@@ -1266,7 +1309,7 @@ function renderHome(){
     $('startAll').disabled = true;
   }
   renderResumeCard();
-  var html = '<section aria-label="'+esc(GROUP.title)+'"><div class="grp"><p>'+esc(GROUP.text)+'</p></div><ol class="list">';
+  var html = '<section aria-label="'+esc(GROUP.title)+'"><div class="grp"><h2>'+esc(GROUP.title)+'</h2><p>'+esc(GROUP.text)+'</p></div><ol class="list">';
   EXERCISES.forEach(function(e,i){
     var on = S.enabled[e.id];
     html += '<li class="card'+(on?'':' off')+'">'+
@@ -1276,7 +1319,7 @@ function renderHome(){
         '<p class="meta">Estimated time: '+fmtDur(est(e))+'</p>'+
         '<div class="tags">'+
           '<span class="tag'+(isDone(e)?' done':'')+'">'+esc(lastDoneText(e))+'</span>'+
-          (isCustom(e)?'<span class="tag custom">Your own setting (NUH sheet: hold '+NUH_HOLD+' sec, '+NUH_REPS+' times)</span>':'')+
+          (isCustom(e)?'<span class="tag custom">Your own setting (Starting defaults: hold '+DEFAULT_HOLD+' sec, '+DEFAULT_REPS+' times)</span>':'')+
           (on?'':'<span class="tag">Not in today\'s plan</span>')+
         '</div>'+
       '</div></div>'+
@@ -1292,7 +1335,22 @@ function renderHome(){
 
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
+// Each exercise has a recommended camera that keeps its working limbs visible.
+var DEMO_CAMERA_PRESETS = {"lumbarrot": [15, 48, 3.7], "piriformis": [-20, 38, 3.7], "lumbarflex": [-20, 12, 3.8], "lumbarside": [65, 10, 4.1]};
+function applyDemoView(sc,view){
+ var id=Object.keys(SCENES).filter(function(k){return SCENES[k]===sc;})[0];
+ var cfg=DEMO_CAMERA_PRESETS[id]||[25,12];
+ sc.cam.yaw=view==='25'?cfg[0]:+view;
+ sc.cam.pitch=view==='25'?cfg[1]:(view==='0'?Math.min(cfg[1],15):Math.min(cfg[1],35));
+ if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];
+ document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===view));});
+}
+Object.keys(DEMO_CAMERA_PRESETS).forEach(function(id){var sc=SCENES[id],cfg=DEMO_CAMERA_PRESETS[id];if(!sc)return;sc.cam.yaw=cfg[0];sc.cam.pitch=cfg[1];if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];});
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;applyDemoView(demoPlayer.sc,b.dataset.view);demoPlayer.frame();});});
+
 function setSpeed(v){
+  S.exerciseSpeed = v; save();
+  $('exerciseSpeed').value = String(v);
   if(demoPlayer) demoPlayer.speed = v;
   $('dSlow').setAttribute('aria-pressed', v<1 ? 'true':'false');
   $('dNormal').setAttribute('aria-pressed', v<1 ? 'false':'true');
@@ -1316,10 +1374,11 @@ function openDemo(id){
   $('demoSafety').textContent = e.safety;
   $('dPlay').textContent = 'Pause';
   if(demoPlayer){ demoPlayer.stop(); demoPlayer = null; }
+  applyDemoView(SCENES[e.id],'25');
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, true);   // left side first
   demoPlayer.start();
-  setSpeed(1);
+  setSpeed(S.exerciseSpeed || 1);
   $('sideCtrl').hidden = !e.sides;
   $('demoSideCue').hidden = !e.sides;
   if(e.sides) setSide(true);
@@ -1337,7 +1396,7 @@ $('dReplay').addEventListener('click',function(){
 });
 $('dLeft').addEventListener('click',function(){ setSide(true); });
 $('dRight').addEventListener('click',function(){ setSide(false); });
-$('dSlow').addEventListener('click',function(){ setSpeed(.6); });
+$('dSlow').addEventListener('click',function(){ setSpeed(.5); });
 $('dNormal').addEventListener('click',function(){ setSpeed(1); });
 
 /* ---------- Routine review screen ---------- */
@@ -1596,12 +1655,13 @@ function fieldHtml(e,f,label){
   return '<label>'+label+' <input type="number" inputmode="numeric" min="'+lim[0]+'" max="'+lim[1]+'" data-f="'+f+'" data-id="'+e.id+'" value="'+v+'"></label>';
 }
 function renderSettings(){
+  $('exerciseSpeed').value = String(S.exerciseSpeed || 1);
   var html = '';
   EXERCISES.forEach(function(e){
     var sel=S.sideSel[e.id];
     html += '<div class="ex-row">'+
       '<label class="chk"><input type="checkbox" data-en="'+e.id+'"'+(S.enabled[e.id]?' checked':'')+'> '+esc(e.name)+'</label>'+
-      '<p class="help" style="margin:0 0 .3rem 2.3rem">NUH sheet: hold '+NUH_HOLD+' seconds, do '+NUH_REPS+' times.</p>'+
+      '<p class="help" style="margin:0 0 .3rem 2.3rem">Starting defaults: hold '+DEFAULT_HOLD+' seconds, do '+DEFAULT_REPS+' times.</p>'+
       '<div class="nums">'+
         fieldHtml(e,'hold','Hold time (seconds)')+
         fieldHtml(e,'reps','Repetitions')+
@@ -1611,7 +1671,7 @@ function renderSettings(){
           '<option value="left"'+(sel==='left'?' selected':'')+'>Left side only</option>'+
           '<option value="right"'+(sel==='right'?' selected':'')+'>Right side only</option></select></label>' : '')+
       '</div>'+
-      '<p class="help changed" id="chg-'+e.id+'"'+(isCustom(e)?'':' hidden')+'>You changed this. It is your own setting, not the NUH prescription.</p>'+
+      '<p class="help changed" id="chg-'+e.id+'"'+(isCustom(e)?'':' hidden')+'>You changed this. It is your own setting, different from the starting defaults.</p>'+
       '<div class="est"><span>Time for one side (estimated)</span><b id="sec-'+e.id+'">'+fmtDur(workOf(e))+'</b></div>'+
       '<div class="est"><span>Total time (estimated)</span><b id="tot-'+e.id+'">'+fmtDur(est(e))+'</b></div>'+
     '</div>';
@@ -1631,6 +1691,10 @@ function clampNum(v,min,max,fallback){
   if(isNaN(n)) return fallback;
   return Math.min(max,Math.max(min,n));
 }
+$('exerciseSpeed').addEventListener('change',function(){
+  var v=+this.value; if([0.5,0.75,1].indexOf(v)<0) return;
+  setSpeed(v);
+});
 $('openSettings').addEventListener('click',function(){ renderSettings(); $('settings').showModal(); });
 $('closeSettings').addEventListener('click',function(){ $('settings').close(); });
 $('settings').addEventListener('close',function(){ renderHome(); if(!$('routine').hidden) renderRoutine(); });
