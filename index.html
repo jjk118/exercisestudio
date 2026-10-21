@@ -187,6 +187,8 @@ const GRID_ICON='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" str
 function thumb(t){ const d=el('span','pick-thumb'); if(t){ const i=el('img'); i.src=IMG[t.art]||IMG.gen; i.alt=''; d.append(i); d.style.background=t.soft; } else d.insertAdjacentHTML('beforeend',GRID_ICON); return d; }
 function updatePickBtn(){
   const t=currentList.find(x=>x.file===selected)||null;
+  const hero=document.querySelector('.hero img');
+  if(hero){ hero.src=t?IMG[t.art]:IMG.home; hero.alt=t?(t.imageAlt||t.name):'Exercise Studio: a lying stretch, seated knee extension and supported balance stance'; hero.width=t?1942:1774; hero.height=t?809:887; }
   const b=$('pick-btn'); b.replaceChildren(thumb(t));
   const txt=el('span','pick-text'); const v=el('span','',t?t.name:'Select a routine'); v.id='pick-val';
   txt.append(v, el('small','',t?t.tag:currentList.length+(currentList.length===1?' routine to choose from':' routines to choose from')));
