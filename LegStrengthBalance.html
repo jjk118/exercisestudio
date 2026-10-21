@@ -313,7 +313,7 @@ select option, select optgroup { font-family:inherit; font-size:1em; font-weight
       <button class="btn primary" id="demoClose" type="button">Close</button>
     </div>
     <div class="dlg-body">
-      <canvas class="stage" id="demoCanvas" role="img"></canvas>
+      <div class="ctrl" aria-label="Demo view"><button class="btn" type="button" data-view="25" aria-pressed="true">Angled view</button><button class="btn" type="button" data-view="0" aria-pressed="false">Side view</button><button class="btn" type="button" data-view="80" aria-pressed="false">Front view</button></div><canvas class="stage" id="demoCanvas" role="img"></canvas>
       <p class="cap" id="demoCap"></p>
       <div class="ctrl">
         <button class="btn" id="dPlay" type="button">Pause</button>
@@ -731,7 +731,7 @@ function poseAt(sc,t){
   }
 }
 
-function renderScene(c,W,H,sc,pose,zoom,mirror){
+function renderScene2D(c,W,H,sc,pose,zoom,mirror){
   var z=zoom||1, s=Math.min(W/2.6,H*.82/1.85)*z, gy=H*(zoom?.945:.9);
   if(mirror){ c.save(); c.translate(W,0); c.scale(-1,1); }
   var T={ W:W, s:s, x:function(x){ return W/2+(x-sc.cx)*s; }, y:function(y){ return gy-y*s; } };
@@ -786,6 +786,234 @@ DemoPlayer.prototype.start=function(){
 // Swap the animation on the fly (used to show a standing figure during rest between reps).
 DemoPlayer.prototype.setScene=function(id,mirror){ this.sc=SCENES[id]; this.mirror=!!mirror; this.t=0; this.lastCap=null; };
 DemoPlayer.prototype.stop=function(){ cancelAnimationFrame(this.raf); this.raf=0; };
+function add3(a,b,k){ return [a[0]+b[0]*k, a[1]+b[1]*k, a[2]+b[2]*k]; }
+function sub3(a,b){ return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+function dot3(a,b){ return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+function len3(a){ return Math.sqrt(dot3(a,a)); }
+function nrm3(a){ var l=len3(a)||1e-6; return [a[0]/l,a[1]/l,a[2]/l]; }
+/* ===== Real 3D renderer (WebGL): solid lit shapes, depth buffer, soft shadows and a perspective camera.
+   If a browser has no WebGL it falls back to the flat renderer above, so the app always works. ===== */
+var glc=null, gl=null, glP=null, glU={}, glA={}, glM={}, glTried=false;
+function hex3(h){ return [parseInt(h.substr(1,2),16)/255,parseInt(h.substr(3,2),16)/255,parseInt(h.substr(5,2),16)/255]; }
+function cross3(a,b){ return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+function m4mul(a,b){ var r=new Float32Array(16); for(var i=0;i<4;i++) for(var j=0;j<4;j++){ var t=0; for(var k=0;k<4;k++) t+=a[k*4+j]*b[i*4+k]; r[i*4+j]=t; } return r; }
+function persp(fy,as,n,f){ var t=1/Math.tan(fy/2), r=new Float32Array(16); r[0]=t/as; r[5]=t; r[10]=(f+n)/(n-f); r[11]=-1; r[14]=2*f*n/(n-f); return r; }
+function lookAt(e,c,u){
+  var z=nrm3(sub3(e,c)), x=nrm3(cross3(u,z)), y=cross3(z,x), r=new Float32Array(16);
+  r[0]=x[0]; r[4]=x[1]; r[8]=x[2];  r[12]=-dot3(x,e);
+  r[1]=y[0]; r[5]=y[1]; r[9]=y[2];  r[13]=-dot3(y,e);
+  r[2]=z[0]; r[6]=z[1]; r[10]=z[2]; r[14]=-dot3(z,e); r[15]=1; return r;
+}
+var GL_VS='attribute vec3 aP; attribute vec3 aN; uniform mat4 uM; uniform mat4 uVP; uniform mat3 uNM; uniform float uTop; uniform float uShadow; uniform float uZp; uniform vec3 uL;'+
+ 'varying vec3 vN; varying vec3 vW;'+
+ 'void main(){ vec3 p=aP; p.xz*=mix(1.0,uTop,p.y); vec4 w=uM*vec4(p,1.0);'+
+ ' if(uShadow>0.5){ w.xy-=(w.z-uZp)*uL.xy/uL.z; w.z=uZp; }'+
+ ' vW=w.xyz; vN=normalize(uNM*aN); gl_Position=uVP*w; }';
+var GL_FS='#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n'+
+ 'varying vec3 vN; varying vec3 vW; uniform vec3 uCol; uniform float uShadow; uniform float uMode; uniform vec3 uL; uniform vec3 uEye;'+
+ 'void main(){'+
+ ' if(uShadow>0.5){ gl_FragColor=vec4(0.03,0.10,0.09,0.32); return; }'+
+ ' vec3 n=normalize(vN); vec3 l=normalize(uL); vec3 v=normalize(uEye-vW);'+
+ ' float d=dot(n,l); float wrap=clamp((d+0.35)/1.35,0.0,1.0);'+
+ ' vec3 hemi=mix(vec3(0.62,0.66,0.68),vec3(1.0,1.0,0.96),n.z*0.5+0.5);'+
+ ' vec3 col=uCol*(hemi*0.52+vec3(0.74)*wrap*0.66); if(uMode>1.5) col=uCol*0.97; else if(uMode>0.5) col=uCol*(0.86+0.14*wrap);'+
+ ' vec3 h=normalize(l+v); col+=pow(max(dot(n,h),0.0),36.0)*0.10*step(uMode,0.5);'+
+ ' col+=pow(1.0-max(dot(n,v),0.0),3.0)*0.07*step(uMode,0.5);'+
+ ' if(uMode>0.5 && uMode<1.5){ vec2 g=fract(vW.xy*2.0); float ln=step(min(min(g.x,1.0-g.x),min(g.y,1.0-g.y)),0.012); col=mix(col,vec3(1.0),ln*0.35); }'+
+ ' if(uMode>1.5){ float g=fract(vW.z*2.0); float ln=step(min(g,1.0-g),0.012); col=mix(col,vec3(1.0),ln*0.3); }'+
+ ' gl_FragColor=vec4(col,1.0); }';
+function glMesh(verts,idx){
+  var vb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,vb); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(verts),gl.STATIC_DRAW);
+  var ib=gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(idx),gl.STATIC_DRAW);
+  return { vb:vb, ib:ib, n:idx.length };
+}
+function buildMeshes(){
+  var v=[],ix=[],i,j,LA=16,LO=28;
+  for(i=0;i<=LA;i++){ var th=Math.PI*i/LA; for(j=0;j<=LO;j++){ var ph=2*Math.PI*j/LO, x=Math.sin(th)*Math.cos(ph), y=Math.cos(th), z=Math.sin(th)*Math.sin(ph); v.push(x,y,z,x,y,z); } }
+  for(i=0;i<LA;i++) for(j=0;j<LO;j++){ var a=i*(LO+1)+j, b=a+LO+1; ix.push(a,b,a+1,b,b+1,a+1); }
+  glM.sphere=glMesh(v,ix);
+  v=[]; ix=[]; var S=32;
+  for(j=0;j<=S;j++){ var q=2*Math.PI*j/S, cx=Math.cos(q), cz=Math.sin(q); v.push(cx,0,cz,cx,0,cz, cx,1,cz,cx,0,cz); }
+  for(j=0;j<S;j++){ var k=j*2; ix.push(k,k+1,k+2,k+1,k+3,k+2); }
+  glM.cyl=glMesh(v,ix);
+  v=[]; ix=[];
+  [[[1,0,0],[1,0,0],[1,1,0],[1,1,1],[1,0,1]],[[-1,0,0],[0,0,0],[0,0,1],[0,1,1],[0,1,0]],
+   [[0,1,0],[0,1,0],[0,1,1],[1,1,1],[1,1,0]],[[0,-1,0],[0,0,0],[1,0,0],[1,0,1],[0,0,1]],
+   [[0,0,1],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],[[0,0,-1],[0,0,0],[0,1,0],[1,1,0],[1,0,0]]].forEach(function(f){
+    var b=v.length/6; for(var t=1;t<5;t++) v.push(f[t][0],f[t][1],f[t][2],f[0][0],f[0][1],f[0][2]);
+    ix.push(b,b+1,b+2,b,b+2,b+3);
+  });
+  glM.box=glMesh(v,ix);
+}
+function glInit(){
+  if(glTried) return !!gl; glTried=true;
+  try{
+    glc=document.createElement('canvas'); glc.width=64; glc.height=64;
+    var opt={ antialias:true, stencil:true, alpha:false };
+    gl=glc.getContext('webgl',opt)||glc.getContext('experimental-webgl',opt);
+    if(!gl) return false;
+    function sh(t,src){ var s=gl.createShader(t); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+    glP=gl.createProgram(); gl.attachShader(glP,sh(gl.VERTEX_SHADER,GL_VS)); gl.attachShader(glP,sh(gl.FRAGMENT_SHADER,GL_FS)); gl.linkProgram(glP);
+    if(!gl.getProgramParameter(glP,gl.LINK_STATUS)) throw new Error('link');
+    gl.useProgram(glP);
+    ['uM','uNM','uVP','uCol','uTop','uShadow','uZp','uL','uEye','uMode'].forEach(function(n){ glU[n]=gl.getUniformLocation(glP,n); });
+    glA.p=gl.getAttribLocation(glP,'aP'); glA.n=gl.getAttribLocation(glP,'aN');
+    gl.enableVertexAttribArray(glA.p); gl.enableVertexAttribArray(glA.n);
+    buildMeshes();
+    return true;
+  }catch(err){ gl=null; return false; }
+}
+/* drawing list: every shape is a mesh with a transform and a colour */
+function opMat(ex,ey,ez,o,sx,sy,sz){
+  return { M:new Float32Array([ex[0]*sx,ex[1]*sx,ex[2]*sx,0, ey[0]*sy,ey[1]*sy,ey[2]*sy,0, ez[0]*sz,ez[1]*sz,ez[2]*sz,0, o[0],o[1],o[2],1]),
+           NM:new Float32Array([ex[0]/sx,ex[1]/sx,ex[2]/sx, ey[0]/sy,ey[1]/sy,ey[2]/sy, ez[0]/sz,ez[1]/sz,ez[2]/sz]) };
+}
+var AX=[[1,0,0],[0,1,0],[0,0,1]];
+function perpPair(ey){ var h=Math.abs(ey[2])<.9?[0,0,1]:[1,0,0], ex=nrm3(cross3(h,ey)); return [ex,cross3(ey,ex)]; }
+function Ops(){ this.list=[]; }
+Ops.prototype.add=function(mesh,m,col,top,mode,sh){ this.list.push({ mesh:mesh, M:m.M, NM:m.NM, col:hex3(col), top:top||1, mode:mode||0, sh:!!sh }); };
+Ops.prototype.ball=function(c,r,col,sh){ var m=opMat(AX[0],AX[1],AX[2],c,r,r,r); this.add('sphere',m,col,1,0,sh); };
+Ops.prototype.ell=function(c,ex,ey,ez,sx,sy,sz,col,sh){ this.add('sphere',opMat(ex,ey,ez,c,sx,sy,sz),col,1,0,sh); };
+Ops.prototype.cap=function(A,B,r0,r1,col,sh){
+  var d=sub3(B,A), L=len3(d); if(L<1e-4){ this.ball(A,r0,col,sh); return; }
+  var ey=[d[0]/L,d[1]/L,d[2]/L], pp=perpPair(ey);
+  this.add('cyl',opMat(pp[0],ey,pp[1],A,r0,L,r0),col,r1/r0,0,sh);
+  this.ball(A,r0,col,sh); this.ball(B,r1,col,sh);
+};
+Ops.prototype.box=function(x0,y0,z0,x1,y1,z1,col,mode,sh){ this.add('box',opMat(AX[0],AX[1],AX[2],[x0,y0,z0],x1-x0,y1-y0,z1-z0),col,1,mode,sh); };
+
+var CLR={ shirt:'#3F9179', trousers:'#2B5A9E', skin:'#E2B48F', hair:'#3B2B22', shoe:'#2C2F36', eye:'#1E1E22' };
+function glFigure(o,k,p){
+  function unit(a,b){ return nrm3(sub3(b,a)); }
+  function torso(A,B,w0,w1,col){
+    var ay=unit(A,B), lat=sub3(p.lat,[ay[0]*dot3(p.lat,ay),ay[1]*dot3(p.lat,ay),ay[2]*dot3(p.lat,ay)]);
+    lat=len3(lat)<1e-3?perpPair(ay)[0]:nrm3(lat); var fr=cross3(lat,ay), L=len3(sub3(B,A)), dp=.098;
+    o.add('cyl',opMat(lat,ay,fr,A,w0,L,w0*(dp/.16)),col,w1/w0,0,true);
+    o.ell(A,lat,ay,fr,w0,w0*.75,w0*(dp/.16),col,true); o.ell(B,lat,ay,fr,w1,w1*.6,w1*(dp/.16),col,true);
+  }
+  // legs
+  [['hipL','legL'],['hipR','legR']].forEach(function(n){
+    var h=k[n[0]], l=k[n[1]];
+    o.ball(h,.088,CLR.trousers,true);
+    o.cap(h,l.knee,.086,.064,CLR.trousers,true);
+    o.cap(l.knee,l.ankle,.062,.046,CLR.trousers,true);
+    o.cap(l.ankle,l.toe,.05,.043,CLR.shoe,true);
+  });
+  // hips and torso
+  var ay0=unit(k.pel,k.mid), lat0=nrm3(p.lat);
+  o.ell(k.pel,lat0,ay0,cross3(lat0,ay0),.165,.105,.11,CLR.trousers,true);
+  torso(k.pel,k.mid,.158,.166,CLR.shirt);
+  torso(k.mid,k.chest,.166,.186,CLR.shirt);
+  // shoulders and arms
+  [['shL','armL'],['shR','armR']].forEach(function(n){
+    var s=k[n[0]], a=k[n[1]];
+    o.ball(s,.058,CLR.shirt,true);
+    o.cap(s,a.elbow,.048,.04,CLR.shirt,true);
+    o.cap(a.elbow,a.hand,.037,.03,CLR.skin,true);
+    o.ball(a.hand,.042,CLR.skin,true);
+  });
+  // neck and head
+  var hd=unit(k.chest,k.head), hp=k.head;
+  o.cap(k.chest,add3(hp,hd,-.05),.048,.042,CLR.skin,true);
+  var n=sub3(k.fwd,[hd[0]*dot3(k.fwd,hd),hd[1]*dot3(k.fwd,hd),hd[2]*dot3(k.fwd,hd)]); n=len3(n)<1e-3?perpPair(hd)[0]:nrm3(n);
+  var hl=nrm3(cross3(hd,n));
+  o.ell(hp,hl,hd,n,.098,.112,.106,CLR.skin,true);
+  o.ell(add3(add3(hp,n,-.03),hd,.018),hl,hd,n,.104,.112,.108,CLR.hair,true);       // hair
+  o.ball(add3(hp,n,.106),.019,CLR.skin,false);                                        // nose
+  [-1,1].forEach(function(sd){ o.ball(add3(add3(add3(hp,n,.087),hl,.037*sd),hd,.014),.014,CLR.eye,false); });
+}
+function glRender(W,H,sc,st,left){
+  if(!glInit()) return null;
+  if(glc.width!==W || glc.height!==H){ glc.width=W; glc.height=H; }
+  var cam=sc.cam, v=sc.glv, ps=cam.yaw*RAD, th=cam.pitch*RAD, cs=Math.cos(ps), sn=Math.sin(ps), cp=Math.cos(th), sp=Math.sin(th);
+  var dir=[-sn*cp, cs*cp, -sp], hd=[-sn,cs,0], pr=[cs,sn,0], asp=W/H, fov=v.fov||30;
+  var dist=v.dist*Math.max(1,1.25/asp)/(sc.zm||1), tg=v.t;
+  var eye=[tg[0]-dir[0]*dist, tg[1]-dir[1]*dist, tg[2]-dir[2]*dist];
+  var VP=m4mul(persp(fov*RAD,asp,.1,40),lookAt(eye,tg,[0,0,1]));
+  var L=nrm3([-hd[0]*.45-pr[0]*.3, -hd[1]*.45-pr[1]*.3, 1]);
+  var pose=st.pose, k=legacyRig(pose,sc,left);
+  var o=new Ops(), wl=v.wall||1.9;
+  o.box(tg[0]-12,tg[1]-12,-.06,tg[0]+12,tg[1]+12,0,'#CFE0DB',1,false);
+  o.add('box',opMat(pr,[0,0,1],hd,[tg[0]+hd[0]*wl-pr[0]*12,tg[1]+hd[1]*wl-pr[1]*12,-.1],24,6,.06),'#D8E3DF',1,2,false);
+  if(sc.glProps) sc.glProps(o);
+  glFigure(o,k,{lat:k.lat});
+  gl.viewport(0,0,W,H);
+  gl.clearColor(.835,.878,.863,1); gl.clearStencil(0);
+  gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.disable(gl.STENCIL_TEST);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT|gl.STENCIL_BUFFER_BIT);
+  gl.uniformMatrix4fv(glU.uVP,false,VP); gl.uniform3fv(glU.uL,L); gl.uniform3fv(glU.uEye,eye); gl.uniform1f(glU.uZp,sc.shadowZ||.003);
+  function draw(it,shadow){
+    var m=glM[it.mesh];
+    gl.bindBuffer(gl.ARRAY_BUFFER,m.vb); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,m.ib);
+    gl.vertexAttribPointer(glA.p,3,gl.FLOAT,false,24,0); gl.vertexAttribPointer(glA.n,3,gl.FLOAT,false,24,12);
+    gl.uniformMatrix4fv(glU.uM,false,it.M); gl.uniformMatrix3fv(glU.uNM,false,it.NM);
+    gl.uniform3fv(glU.uCol,it.col); gl.uniform1f(glU.uTop,it.top); gl.uniform1f(glU.uMode,it.mode); gl.uniform1f(glU.uShadow,shadow?1:0);
+    gl.drawElements(gl.TRIANGLES,m.n,gl.UNSIGNED_SHORT,0);
+  }
+  o.list.forEach(function(it){ draw(it,false); });
+  gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.EQUAL,0,255); gl.stencilOp(gl.KEEP,gl.KEEP,gl.INCR);   // a shadow is painted once, so overlaps do not get darker
+  o.list.forEach(function(it){ if(it.sh) draw(it,true); });
+  gl.disable(gl.STENCIL_TEST);
+  var T={ W:W, H:H, s:H/(2*Math.tan(fov*RAD/2)*dist),
+    p:function(x,y,z){ var a=VP, w=a[3]*x+a[7]*y+a[11]*z+a[15];
+      return { X:((a[0]*x+a[4]*y+a[8]*z+a[12])/w*.5+.5)*W, Y:(1-((a[1]*x+a[5]*y+a[9]*z+a[13])/w*.5+.5))*H }; } };
+  return T;
+}
+
+// Give the existing movement poses depth without changing their movement paths or timing.
+function legacyRig(p,sc,left){
+  var k=skeleton(p,sc), sign=left?-1:1;
+  function q(point,depth){return [point.x,depth*sign,point.y];}
+  function joint(l,d){return {knee:[l.mx,d*sign,l.my],ankle:[l.ex,d*sign,l.ey]};}
+  function arm(l,d){return {elbow:[l.mx,d*sign,l.my],hand:[l.ex,d*sign,l.ey]};}
+  var pel=q(k.hip,0), chest=q(k.sh,0), mid=add3(pel,sub3(chest,pel),.5);
+  var out={pel:pel,mid:mid,chest:chest,head:q(k.head,0),hipL:q(k.hip,-.11),hipR:q(k.hip,.11),shL:q(k.sh,-.19),shR:q(k.sh,.19),legL:joint(k.ln,-.11),legR:joint(k.lf,.11),armL:arm(k.an,-.19),armR:arm(k.af,.19),fwd:[k.face.x,0,k.face.y],lat:[0,-sign,0]};
+  out.legL.toe=q(k.toeN,-.11);out.legR.toe=q(k.toeF,.11);
+  // Side-lying hip abduction: lateral separation is vertical when lying on the side.
+  if(sc.viewId==='sideabd'){
+    var pivot=pel[2];
+    function roll(v){var y=v[1];v[1]=-(v[2]-pivot)*sign;v[2]=pivot-y*sign;}
+    ['pel','mid','chest','head','hipL','hipR','shL','shR'].forEach(function(n){roll(out[n]);});
+    ['legL','legR','armL','armR'].forEach(function(n){Object.keys(out[n]).forEach(function(j){roll(out[n][j]);});});
+    out.lat=[0,0,-1];out.fwd=[1,0,0];
+    var lift=Math.max(0,p.ny-.07);
+    out.legL.ankle[1]=-.11*sign;out.legL.ankle[2]=pivot+.11+lift;
+    out.legL.toe[1]=-.11*sign;out.legL.toe[2]=pivot+.11+lift+.03;
+    out.legL.knee=add3(out.hipL,sub3(out.legL.ankle,out.hipL),.5);
+  }
+  return out;
+}
+function legacyChair3D(o,x){
+  [x+.02,x+.42].forEach(function(px){[-.25,.25].forEach(function(y){o.box(px-.02,y-.02,0,px+.02,y+.02,.42,'#A98763',0,true);});});
+  o.box(x,-.29,.42,x+.46,.29,.47,'#B8946D',0,true);
+  o.box(x,-.29,.47,x+.025,.29,1.05,'#8C6B4A',0,true);
+}
+Object.keys(SCENES).forEach(function(id){
+ var sc=SCENES[id];sc.viewId=id;sc.cam={yaw:25,pitch:12};
+ var floor=['bridge','quadset','slr','sideabd'].indexOf(id)>-1;
+ sc.glv={t:[sc.cx||1.1,0,floor?.32:.95],dist:floor?4.3:4.8};
+ if(floor){sc.cam.pitch=28;sc.shadowZ=.034;}
+ sc.glProps=function(o){
+  if(floor)o.box(.12,-.7,0,2.3,.7,.03,'#9BB6D6',0,false);
+  if(id==='sts'||id==='seatedext')legacyChair3D(o,.66);
+  if(['calf','minisquat','balance','balancehold'].indexOf(id)>-1)legacyChair3D(o,1.10);
+  if(id==='wall'){
+   [-.35,.35].forEach(function(y){o.box(.56,y,0,.59,y+.025,1.9,'#A7BDB4',0,false);});
+   o.box(.56,-.35,1.88,.59,.375,1.91,'#A7BDB4',0,false);
+  }
+  if(id==='step'||id==='stepdown'){
+   o.box(1.34,-.32,0,1.80,.32,.18,'#8AA0A8',0,true);
+   [.62,2.15].forEach(function(x){o.box(x,-.48,0,x+.025,-.455,1.3,'#7E8E96',0,true);});
+   o.box(.5,-.48,1.28,2.3,-.455,1.32,'#7E8E96',0,true);
+  }
+ };
+});
+
+function renderScene(c,W,H,sc,pose,zoom,mirror){
+ var T=glRender(W,H,sc,{pose:pose},mirror);
+ if(T)c.drawImage(glc,0,0,W,H);else renderScene2D(c,W,H,sc,pose,zoom,mirror);
+}
 /*ENGINE-END*/
 
 
@@ -1077,6 +1305,8 @@ function renderHome(){
 
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;demoPlayer.sc.cam.yaw=+b.dataset.view;document.querySelectorAll('[data-view]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});demoPlayer.frame();});});
+
 function setSpeed(v){
   S.exerciseSpeed = v; save();
   $('exerciseSpeed').value = String(v);
@@ -1100,6 +1330,7 @@ function openDemo(id){
   $('dPlay').textContent = 'Pause';
   if(demoPlayer){ demoPlayer.stop(); demoPlayer = null; }
   if(e.id==='balance') setHold('balance', repsOf(e));   // demo holds for the seconds set in Settings
+  SCENES[e.id].cam.yaw=25;document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view==='25'));});
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, !!(e.sides||e.setLabels));   // left leg first
   demoPlayer.start();

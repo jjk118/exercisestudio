@@ -362,7 +362,7 @@ select option, select optgroup { font-family:inherit; font-size:1em; font-weight
       <button class="btn primary" id="demoClose" type="button">Close</button>
     </div>
     <div class="dlg-body">
-      <canvas class="stage" id="demoCanvas" role="img"></canvas>
+      <div class="ctrl" aria-label="Demo view"><button class="btn" type="button" data-view="25" aria-pressed="true">Angled view</button><button class="btn" type="button" data-view="0" aria-pressed="false">Side view</button><button class="btn" type="button" data-view="80" aria-pressed="false">Front view</button></div><canvas class="stage" id="demoCanvas" role="img"></canvas>
       <p class="cap" id="demoCap" aria-live="off"></p>
       <div class="ctrl">
         <button class="btn" id="dPlay" type="button">Pause</button>
@@ -1315,6 +1315,8 @@ function renderHome(){
 
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;demoPlayer.sc.cam.yaw=+b.dataset.view;document.querySelectorAll('[data-view]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});demoPlayer.frame();});});
+
 function setSpeed(v){
   S.exerciseSpeed = v; save();
   $('exerciseSpeed').value = String(v);
@@ -1341,6 +1343,7 @@ function openDemo(id){
   $('demoSafety').textContent = e.safety;
   $('dPlay').textContent = 'Pause';
   if(demoPlayer){ demoPlayer.stop(); demoPlayer = null; }
+  SCENES[e.id].cam.yaw=25;document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view==='25'));});
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, true);   // left side first
   demoPlayer.start();
