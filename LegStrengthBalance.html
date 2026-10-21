@@ -269,6 +269,15 @@ select option, select optgroup { font-family:inherit; font-size:1em; font-weight
 #session .s-count{font-size:2.7rem;line-height:1.05;margin-top:0}
 #session .s-cap{min-height:1.45rem;margin-top:.15rem}
 #session .s-btns{padding-top:.5rem}
+
+/* Keep session controls below the content, including on short screens. */
+#session .s-card{height:auto;min-height:min-content;flex-shrink:0}
+#session .s-card > *{flex-shrink:0}
+#session .s-btns{
+ position:static;bottom:auto;margin-top:.8rem;flex-shrink:0;
+ padding:.5rem 0 calc(.8rem + env(safe-area-inset-bottom,0px));
+ background:var(--surface);
+}
 </style>
 </head>
 <body>
