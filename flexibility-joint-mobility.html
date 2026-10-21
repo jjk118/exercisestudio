@@ -871,7 +871,7 @@ function glMesh(verts,idx){
   return { vb:vb, ib:ib, n:idx.length };
 }
 function buildMeshes(){
-  var v=[],ix=[],i,j,LA=16,LO=28;
+  var v=[],ix=[],i,j,LA=24,LO=40;
   for(i=0;i<=LA;i++){ var th=Math.PI*i/LA; for(j=0;j<=LO;j++){ var ph=2*Math.PI*j/LO, x=Math.sin(th)*Math.cos(ph), y=Math.cos(th), z=Math.sin(th)*Math.sin(ph); v.push(x,y,z,x,y,z); } }
   for(i=0;i<LA;i++) for(j=0;j<LO;j++){ var a=i*(LO+1)+j, b=a+LO+1; ix.push(a,b,a+1,b,b+1,a+1); }
   glM.sphere=glMesh(v,ix);
@@ -955,15 +955,36 @@ function glFigure(o,k,p){
     o.cap(a.elbow,a.hand,.037,.03,CLR.skin,true);
     o.ball(a.hand,.042,CLR.skin,true);
   });
-  // neck and head
+  // Original stylized studio character: sculpted face, swept hair and calm expression.
   var hd=unit(k.chest,k.head), hp=k.head;
-  o.cap(k.chest,add3(hp,hd,-.05),.048,.042,CLR.skin,true);
+  o.cap(k.chest,add3(hp,hd,-.065),.045,.038,CLR.skin,true);
   var n=sub3(k.fwd,[hd[0]*dot3(k.fwd,hd),hd[1]*dot3(k.fwd,hd),hd[2]*dot3(k.fwd,hd)]); n=len3(n)<1e-3?perpPair(hd)[0]:nrm3(n);
   var hl=nrm3(cross3(hd,n));
-  o.ell(hp,hl,hd,n,.098,.112,.106,CLR.skin,true);
-  o.ell(add3(add3(hp,n,-.03),hd,.018),hl,hd,n,.104,.112,.108,CLR.hair,true);       // hair
-  o.ball(add3(hp,n,.106),.019,CLR.skin,false);                                        // nose
-  [-1,1].forEach(function(sd){ o.ball(add3(add3(add3(hp,n,.087),hl,.037*sd),hd,.014),.014,CLR.eye,false); });
+  function face(x,y,z){return add3(add3(add3(hp,hl,x),hd,y),n,z);}
+  function detail(x,y,z,sx,sy,sz,col,shadow){o.ell(face(x,y,z),hl,hd,n,sx,sy,sz,col,!!shadow);}
+  // Shaped cheekbones and jaw replace the featureless oval head.
+  detail(0,.008,0,.09,.111,.094,CLR.skin,true);
+  detail(0,-.057,.013,.073,.053,.073,CLR.skin,true);
+  [-1,1].forEach(function(sd){
+    detail(sd*.089,-.008,-.008,.014,.024,.018,CLR.skin,true);
+    detail(sd*.034,.023,.086,.018,.011,.008,'#F6F2EB',false);
+    detail(sd*.034,.023,.094,.007,.007,.0035,'#5C4636',false);
+    detail(sd*.034,.023,.097,.0035,.0045,.002,'#242D34',false);
+    detail(sd*.032,.026,.099,.0018,.0018,.001,'#FFFFFF',false);
+    // Brows follow the curved face rather than protruding spherical eyes.
+    o.cap(face(sd*.018,.046,.087),face(sd*.050,.044,.078),.004,.003,CLR.hair,false);
+  });
+  detail(0,.003,.094,.012,.026,.012,CLR.skin,true);
+  detail(0,-.013,.107,.014,.011,.013,CLR.skin,true);
+  // Small closed smile and a softly defined chin.
+  var smile=[[-.028,-.042,.085],[-.014,-.048,.091],[0,-.050,.093],[.014,-.048,.091],[.028,-.042,.085]];
+  for(var si=1;si<smile.length;si++)o.cap(face.apply(null,smile[si-1]),face.apply(null,smile[si]),.0026,.0026,'#975D50',false);
+  detail(0,-.073,.065,.035,.011,.008,'#E6B392',false);
+  // Short tapered hair with a swept quiff: deliberately illustrated, not a real person's likeness.
+  detail(0,.023,-.047,.091,.094,.061,CLR.hair,true);
+  detail(0,.081,-.010,.094,.049,.085,CLR.hair,true);
+  detail(-.019,.108,.012,.077,.025,.064,'#49382E',true);
+  [-1,1].forEach(function(sd){detail(sd*.081,.037,-.016,.009,.032,.028,'#685348',true);});
 }
 function glRender(W,H,sc,st,left){
   if(!glInit()) return null;
