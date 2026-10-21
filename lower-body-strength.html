@@ -1450,7 +1450,18 @@ function renderHome(){
 
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
-document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;demoPlayer.sc.cam.yaw=+b.dataset.view;document.querySelectorAll('[data-view]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});demoPlayer.frame();});});
+// Each exercise has a recommended camera that keeps its working limbs visible.
+var DEMO_CAMERA_PRESETS = {"sitstand": [25, 10], "heelraise": [35, 8], "hipabduction": [65, 10], "bridge": [-15, 18, 3.7]};
+function applyDemoView(sc,view){
+ var id=Object.keys(SCENES).filter(function(k){return SCENES[k]===sc;})[0];
+ var cfg=DEMO_CAMERA_PRESETS[id]||[25,12];
+ sc.cam.yaw=view==='25'?cfg[0]:+view;
+ sc.cam.pitch=view==='25'?cfg[1]:(view==='0'?Math.min(cfg[1],15):Math.min(cfg[1],35));
+ if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];
+ document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===view));});
+}
+Object.keys(DEMO_CAMERA_PRESETS).forEach(function(id){var sc=SCENES[id],cfg=DEMO_CAMERA_PRESETS[id];if(!sc)return;sc.cam.yaw=cfg[0];sc.cam.pitch=cfg[1];if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];});
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;applyDemoView(demoPlayer.sc,b.dataset.view);demoPlayer.frame();});});
 function setSpeed(v){
   S.exerciseSpeed = v; save();
   $('exerciseSpeed').value = String(v);
@@ -1476,7 +1487,7 @@ function openDemo(id){
   $('demoMistake').textContent = e.mistake;
   $('demoYT').href = demoUrl(e);
   $('dPlay').textContent = 'Pause';
-  SCENES[e.id].cam.yaw=25;document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view==='25'));});
+  applyDemoView(SCENES[e.id],'25');
   if(demoPlayer){ demoPlayer.stop(); demoPlayer = null; }
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, !!(e.sides||e.setLabels));   // left leg first

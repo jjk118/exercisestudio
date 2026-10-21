@@ -1315,7 +1315,18 @@ function renderHome(){
 
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
-document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;demoPlayer.sc.cam.yaw=+b.dataset.view;document.querySelectorAll('[data-view]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});demoPlayer.frame();});});
+// Each exercise has a recommended camera that keeps its working limbs visible.
+var DEMO_CAMERA_PRESETS = {"lumbarrot": [15, 48, 3.7], "piriformis": [-20, 38, 3.7], "lumbarflex": [-20, 12, 3.8], "lumbarside": [65, 10, 4.1]};
+function applyDemoView(sc,view){
+ var id=Object.keys(SCENES).filter(function(k){return SCENES[k]===sc;})[0];
+ var cfg=DEMO_CAMERA_PRESETS[id]||[25,12];
+ sc.cam.yaw=view==='25'?cfg[0]:+view;
+ sc.cam.pitch=view==='25'?cfg[1]:(view==='0'?Math.min(cfg[1],15):Math.min(cfg[1],35));
+ if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];
+ document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===view));});
+}
+Object.keys(DEMO_CAMERA_PRESETS).forEach(function(id){var sc=SCENES[id],cfg=DEMO_CAMERA_PRESETS[id];if(!sc)return;sc.cam.yaw=cfg[0];sc.cam.pitch=cfg[1];if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];});
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;applyDemoView(demoPlayer.sc,b.dataset.view);demoPlayer.frame();});});
 
 function setSpeed(v){
   S.exerciseSpeed = v; save();
@@ -1343,7 +1354,7 @@ function openDemo(id){
   $('demoSafety').textContent = e.safety;
   $('dPlay').textContent = 'Pause';
   if(demoPlayer){ demoPlayer.stop(); demoPlayer = null; }
-  SCENES[e.id].cam.yaw=25;document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view==='25'));});
+  applyDemoView(SCENES[e.id],'25');
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, true);   // left side first
   demoPlayer.start();

@@ -1004,8 +1004,8 @@ Object.keys(SCENES).forEach(function(id){
   }
   if(id==='step'||id==='stepdown'){
    o.box(1.34,-.32,0,1.80,.32,.18,'#8AA0A8',0,true);
-   [.62,2.15].forEach(function(x){o.box(x,-.48,0,x+.025,-.455,1.3,'#7E8E96',0,true);});
-   o.box(.5,-.48,1.28,2.3,-.455,1.32,'#7E8E96',0,true);
+   [.62,2.15].forEach(function(x){o.box(x,.455,0,x+.025,.48,1.3,'#7E8E96',0,true);});
+   o.box(.5,.455,1.28,2.3,.48,1.32,'#7E8E96',0,true);
   }
  };
 });
@@ -1305,7 +1305,18 @@ function renderHome(){
 
 /* ---------- Demo dialog ---------- */
 var demoPlayer = null;
-document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;demoPlayer.sc.cam.yaw=+b.dataset.view;document.querySelectorAll('[data-view]').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});demoPlayer.frame();});});
+// Each exercise has a recommended camera that keeps its working limbs visible.
+var DEMO_CAMERA_PRESETS = {"calf": [-25, 8, 4.3], "bridge": [-15, 18, 3.7], "wall": [30, 8, 4.3], "sts": [25, 10, 4.3], "step": [-25, 10, 4.5], "stepdown": [-25, 10, 4.5], "balance": [-40, 10, 4.3], "balancehold": [-40, 10, 4.3]};
+function applyDemoView(sc,view){
+ var id=Object.keys(SCENES).filter(function(k){return SCENES[k]===sc;})[0];
+ var cfg=DEMO_CAMERA_PRESETS[id]||[25,12];
+ sc.cam.yaw=view==='25'?cfg[0]:+view;
+ sc.cam.pitch=view==='25'?cfg[1]:(view==='0'?Math.min(cfg[1],15):Math.min(cfg[1],35));
+ if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];
+ document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view===view));});
+}
+Object.keys(DEMO_CAMERA_PRESETS).forEach(function(id){var sc=SCENES[id],cfg=DEMO_CAMERA_PRESETS[id];if(!sc)return;sc.cam.yaw=cfg[0];sc.cam.pitch=cfg[1];if(cfg[2]&&sc.glv)sc.glv.dist=cfg[2];});
+document.querySelectorAll('[data-view]').forEach(function(b){b.addEventListener('click',function(){if(!demoPlayer)return;applyDemoView(demoPlayer.sc,b.dataset.view);demoPlayer.frame();});});
 
 function setSpeed(v){
   S.exerciseSpeed = v; save();
@@ -1330,7 +1341,7 @@ function openDemo(id){
   $('dPlay').textContent = 'Pause';
   if(demoPlayer){ demoPlayer.stop(); demoPlayer = null; }
   if(e.id==='balance') setHold('balance', repsOf(e));   // demo holds for the seconds set in Settings
-  SCENES[e.id].cam.yaw=25;document.querySelectorAll('[data-view]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.view==='25'));});
+  applyDemoView(SCENES[e.id],'25');
   $('demoDlg').showModal();
   demoPlayer = new DemoPlayer($('demoCanvas'), $('demoCap'), e.id, !!(e.sides||e.setLabels));   // left leg first
   demoPlayer.start();
