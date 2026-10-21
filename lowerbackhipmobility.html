@@ -302,6 +302,17 @@ select, select.btn, .h-add select {
   max-width:100%;
 }
 select option, select optgroup { font-family:inherit; font-size:1em; font-weight:600; }
+
+/* Give the live exercise animation the full available card width. */
+#session .s-card{padding:.7rem .75rem 0;gap:.2rem}
+#session .stage-s,
+#session.p-ready .stage-s,
+#session.p-rest .stage-s{
+ width:100%;max-width:32rem;aspect-ratio:5/4;flex-shrink:0;
+}
+#session .s-count{font-size:3.6rem;line-height:1.05;margin-top:0}
+#session .s-cap{min-height:1.45rem;margin-top:.15rem}
+#session .s-btns{padding-top:.5rem}
 </style>
 </head>
 <body>
