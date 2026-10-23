@@ -1891,11 +1891,26 @@ function beep(freq,dur){
     o.start(); o.stop(audioCtx.currentTime+dur+0.05);
   }catch(err){}
 }
+function preferredEnglishVoice(){
+  if(!window.speechSynthesis) return null;
+  var voices = speechSynthesis.getVoices ? speechSynthesis.getVoices() : [];
+  var english = voices.filter(function(v){ return /^en(?:-|$)/i.test(v.lang||''); });
+  if(!english.length) return null;
+  // The Web Speech API does not expose voice gender consistently. Prefer voices
+  // whose platform names commonly identify a feminine English voice.
+  var feminine = /female|woman|samantha|victoria|karen|moira|tessa|zira|jenny|aria|susan|hazel|siri/i;
+  var preferred = english.filter(function(v){ return feminine.test(v.name||''); });
+  if(!preferred.length) return english[0];
+  // Prefer Singapore English when a matching voice is installed.
+  return preferred.find(function(v){ return /^en[-_]SG/i.test(v.lang||''); }) || preferred[0];
+}
 function speak(text){
   if(!S.voice || !window.speechSynthesis) return;
   try{
     speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text); u.rate = 0.9;
+    var voice = preferredEnglishVoice();
+    if(voice){ u.voice = voice; u.lang = voice.lang; }
     speechSynthesis.speak(u);
   }catch(err){}
 }
