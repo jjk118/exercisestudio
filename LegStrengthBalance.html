@@ -1115,9 +1115,9 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function defaults(){
-  var s = { exerciseSpeed:1, enabled:{}, sets:{}, reps:{}, rest:{}, repRest:{}, history:{}, histTime:{}, histStamp:'', histSavedAt:0, lastBackup:0, between:20, sound:true, voice:false, size:'normal', contrast:false,
+  var s = { exerciseSpeed:1, enabled:{}, sets:{}, reps:{}, rest:{}, repRest:{}, history:{}, histTime:{}, histStamp:'', histSavedAt:0, lastBackup:0, between:15, sound:true, voice:false, size:'normal', contrast:false,
             done:{ date:todayStr(), ids:[] } };
-  EXERCISES.forEach(function(e){ s.enabled[e.id]=true; s.sets[e.id]=e.sets; s.reps[e.id]=e.reps; s.rest[e.id]=e.rest; s.repRest[e.id]=0; });
+  EXERCISES.forEach(function(e){ s.enabled[e.id]=true; s.sets[e.id]=e.sets; s.reps[e.id]=e.reps; s.rest[e.id]=15; s.repRest[e.id]=0; });
   return s;
 }
 // Some in-app viewers block or wipe local storage. Detect that so we can warn instead of failing silently.
@@ -1162,7 +1162,7 @@ function load(){
       if(p.sets && p.sets[e.id]>=1) s.sets[e.id]=p.sets[e.id];
       if(p.reps && p.reps[e.id]>=1 && p.reps[e.id]!==OLD_REPS[e.id]) s.reps[e.id]=p.reps[e.id];   // keep only values you changed yourself
       if(p.repRest && p.repRest[e.id]>=0) s.repRest[e.id]=p.repRest[e.id];
-      if(p.rest && p.rest[e.id]>=0 && p.rest[e.id]!==OLD_REST[e.id]) s.rest[e.id]=p.rest[e.id];   // keep only rests you changed yourself
+      if(p.rest && p.rest[e.id]>=0) s.rest[e.id]=p.rest[e.id];   // keep only rests you changed yourself
     });
     if(p.between>=0) s.between=p.between;
     ['sound','voice','contrast'].forEach(function(k){ if(typeof p[k]==='boolean') s[k]=p[k]; });
@@ -1723,7 +1723,7 @@ $('exRows').addEventListener('change',function(ev){
 $('selAll').addEventListener('click',function(){ EXERCISES.forEach(function(e){S.enabled[e.id]=true;}); save(); renderSettings(); });
 $('selNone').addEventListener('click',function(){ EXERCISES.forEach(function(e){S.enabled[e.id]=false;}); save(); renderSettings(); });
 $('resetTiming').addEventListener('click',function(){
-  EXERCISES.forEach(function(e){ S.sets[e.id]=e.sets; S.reps[e.id]=e.reps; S.rest[e.id]=e.rest; S.repRest[e.id]=0; });
+  EXERCISES.forEach(function(e){ S.sets[e.id]=e.sets; S.reps[e.id]=e.reps; S.rest[e.id]=15; S.repRest[e.id]=0; });
   S.between = 20; save(); renderSettings();
 });
 $('between').addEventListener('change',function(){ S.between = clampNum(this.value,5,180,S.between); this.value=S.between; save(); });
